@@ -10,8 +10,8 @@
     <!-- suppress framework noise -->
     <logger name="org.springframework"          level="WARN"/>
     <logger name="org.hibernate"                level="WARN"/>
-    <logger name="org.hibernate.SQL"            level="DEBUG"/>
-    <logger name="org.hibernate.orm.jdbc.bind"  level="TRACE"/>
+    <logger name="org.hibernate.SQL"            level="WARN"/>
+    <logger name="org.hibernate.orm.jdbc.bind"  level="WARN"/>
     <logger name="com.zaxxer.hikari"            level="WARN"/>
 
     <!-- application code at INFO; raise to DEBUG locally when needed -->

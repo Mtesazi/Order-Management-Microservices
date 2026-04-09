@@ -1,67 +1,85 @@
-<<<<<<< HEAD
 # Order Management Microservice (Spring Boot)
 
-Small Spring Boot microservice demonstrating clean backend design for managing **Products** and **Orders**.
+Small Spring Boot microservice that manages Products and Orders with a clean layered architecture.
 
-## Tech
+## Tech Stack
 
 - Java 21
-- Spring Boot 3
+- Spring Boot 4
+- Spring Security (HTTP Basic)
+- Spring Data JPA + H2 (in-memory)
+- Springdoc OpenAPI (Swagger UI)
+- Lombok
 - Maven
-- Spring Data JPA
-- H2 in-memory database
 
-## Project Structure
+## Architecture
 
-- `controller` - REST API endpoints
-- `service` - business logic
-- `repository` - persistence abstraction backed by H2 (in-memory)
-- `model` - domain entities
-- `dto` - API request/response contracts
-- `mapper` - domain-to-DTO conversion
-- `exception` - centralized API error handling
+- `controller`: REST endpoints
+- `service`: business logic and orchestration
+- `repository`: persistence abstraction and JPA implementation
+- `model`: JPA entities
+- `dto`: API request/response contracts
+- `mapper`: model-to-DTO conversion
+- `exception`: centralized API error handling
+- `conf`: security and OpenAPI configuration
 
 ## API Endpoints
 
-All API endpoints require Basic Authentication.
-
-- Username: `apiuser`
-- Password: `apipassword`
-- Config keys: `spring.security.user.name`, `spring.security.user.password`
-
 ### Products
 
-- `POST /api/products` - create a product
-- `GET /api/products` - list products
-- `GET /api/products/{id}` - get one product
-- `PATCH /api/products/{id}/stock` - update stock
-
-Example create request:
-
-```json
-{
-  "name": "Laptop",
-  "description": "14-inch business laptop",
-  "price": 1200.00,
-  "stockQuantity": 5
-}
-```
+- `POST /api/products` - create product
+- `GET /api/products/{id}` - get product by ID
+- `GET /api/products` - list all products
+- `PATCH /api/products/{id}/stock` - update stock quantity
 
 ### Orders
 
-- `POST /api/orders` - create an order from one or more product items
-- `GET /api/orders` - list orders
-- `GET /api/orders/{id}` - get one order
+- `POST /api/orders` - create order
+- `GET /api/orders/{id}` - get order by ID
+- `GET /api/orders` - list all orders
 
-Example create request:
+## Business Rules
 
-```json
-{
-  "items": [
-    {"productId": 1, "quantity": 2}
-  ]
-}
-```
+When creating an order:
+
+- all product IDs must exist
+- total price is calculated from line totals (`price * quantity`)
+- if any product is missing, the order is rejected with a clear `404` response
+- if stock is insufficient, the order is rejected with a clear `400` response
+- stock deduction and order persistence run in one transaction
+
+## Persistence and Schema Decisions
+
+H2 in-memory database is used (`jdbc:h2:mem:orderdb`). Schema is minimal and relational:
+
+- `products`: catalog and stock (`name`, `description`, `price`, `stock_quantity`, `created_at`, `updated_at`)
+- `orders`: order header (`status`, `total_amount`, `created_at`)
+- `order_items`: line items (`order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `line_total`)
+
+Relations:
+
+- one-to-many from `orders` to `order_items` (`order_id`)
+- `Order` owns lifecycle of `OrderItem` (`cascade = ALL`, `orphanRemoval = true`)
+- `product_id` is stored on each order item as a business reference
+
+## Security
+
+- All `/api/**` endpoints require HTTP Basic authentication.
+- Credentials are configurable via:
+  - `spring.security.user.name`
+  - `spring.security.user.password`
+- Swagger is available for local exploration.
+- H2 console is enabled only when the `dev` profile is active.
+
+Default local credentials:
+
+- Username: `apiuser`
+- Password: `apipassword`
+
+## API Documentation
+
+- Swagger UI: `http://localhost:8083/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8083/v3/api-docs`
 
 ## Run
 
@@ -69,50 +87,20 @@ Example create request:
 mvn spring-boot:run
 ```
 
-Default port is configured in `src/main/resources/application.properties`.
+Run with the dev profile to use the H2 console:
 
-H2 console (while app is running):
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
-- URL: `http://localhost:8083/h2-console`
-- JDBC URL: `jdbc:h2:mem:orderdb`
+When `dev` is active:
 
-## Schema Decisions
+- H2 console: `http://localhost:8083/h2-console`
 
-### Tables
-
-- `products`: product catalog with `name`, `description`, `price`, `stock_quantity`, `created_at`, `updated_at`
-- `orders`: order header with `status`, `total_amount`, `created_at`
-- `order_items`: line items with `order_id`, `product_id`, `product_name`, `unit_price`, `quantity`, `line_total`
-
-### Relationships
-
-- One order has many order items (`orders.id` -> `order_items.order_id`)
-- `Order` owns `OrderItem` lifecycle (`cascade = ALL`, `orphanRemoval = true`)
-- `order_items.product_id` is stored as a reference value (not an enforced foreign key)
-
-### Design Rationale
-
-- Minimal schema focused on required endpoints (create/get/list for products and orders)
-- Order items snapshot product name and unit price at order time to preserve historical accuracy
-- H2 is in-memory for fast local/test execution; schema is created and dropped automatically
-- Stock updates and order creation run transactionally so failed orders do not leave partial stock changes
-
-## Test Harness
-
-`src/test/java/com/pollinate/ProductOrderFlowTest.java` validates a full flow:
-
-1. Create product
-2. Create order
-3. Verify stock decrement
-4. Verify insufficient-stock error handling
-
-Run tests:
+## Test
 
 ```bash
 mvn test
 ```
 
-=======
-# Order-Management-Microservices
-Microservices that manages Product and Orders
->>>>>>> origin/main
+Integration flow test: `src/test/java/com/pollinate/ProductOrderFlowTest.java`
