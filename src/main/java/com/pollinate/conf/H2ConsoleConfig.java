@@ -7,6 +7,11 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Conditionally registers the H2 database console servlet.
+ * Activated when spring.h2.console.enabled=true (default profile).
+ * Path can be customized via spring.h2.console.path property.
+ */
 @Configuration
 @ConditionalOnProperty(name = "spring.h2.console.enabled", havingValue = "true")
 public class H2ConsoleConfig {

@@ -8,15 +8,21 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
+/**
+ * Configures HTTP security and authentication for the application.
+ * - All /api/** endpoints require HTTP Basic authentication
+ * - H2 console at /h2-console/** is exempt from authentication
+ * - CSRF is disabled to support simple API use cases
+ * - Frameoptions allow same-origin frames for H2 console UI
+ */
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    @SuppressWarnings("Convert2MethodRef")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/favicon.ico").permitAll();
+                    // Allow H2 console access without authentication
                     auth.requestMatchers(
                             RegexRequestMatcher.regexMatcher("^/h2-console(/.*)?$")
                     ).permitAll();

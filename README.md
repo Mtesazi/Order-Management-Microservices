@@ -69,7 +69,7 @@ Relations:
   - `spring.security.user.name`
   - `spring.security.user.password`
 - Swagger is available for local exploration.
-- H2 console is enabled only when the `dev` profile is active.
+- H2 console is enabled in the default profile.
 
 Default local credentials:
 
@@ -87,15 +87,17 @@ Default local credentials:
 mvn spring-boot:run
 ```
 
-Run with the dev profile to use the H2 console:
+Run with the dev profile (optional):
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-When `dev` is active:
+H2 Console:
 
-- H2 console: `http://localhost:8083/h2-console`
+```
+http://localhost:8083/h2-console
+```
 
 ## Test
 
