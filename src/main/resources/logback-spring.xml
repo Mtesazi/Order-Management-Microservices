@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- suppress framework noise -->
+    <logger name="org.springframework"          level="WARN"/>
+    <logger name="org.hibernate"                level="WARN"/>
+    <logger name="org.hibernate.SQL"            level="DEBUG"/>
+    <logger name="org.hibernate.orm.jdbc.bind"  level="TRACE"/>
+    <logger name="com.zaxxer.hikari"            level="WARN"/>
+
+    <!-- application code at INFO; raise to DEBUG locally when needed -->
+    <logger name="com.pollinate" level="INFO"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>
+

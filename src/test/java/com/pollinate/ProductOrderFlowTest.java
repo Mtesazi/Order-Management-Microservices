@@ -5,8 +5,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class ProductOrderFlowTest {
 
@@ -32,6 +36,7 @@ class ProductOrderFlowTest {
                 """;
 
         mockMvc.perform(post("/api/products")
+                        .with(httpBasic("apiuser", "apipassword"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createProductJson))
                 .andExpect(status().isCreated())
@@ -47,6 +52,7 @@ class ProductOrderFlowTest {
                 """;
 
         mockMvc.perform(post("/api/orders")
+                        .with(httpBasic("apiuser", "apipassword"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createOrderJson))
                 .andExpect(status().isCreated())
@@ -54,7 +60,8 @@ class ProductOrderFlowTest {
                 .andExpect(jsonPath("$.totalAmount").value(2400.0))
                 .andExpect(jsonPath("$.items[0].quantity").value(2));
 
-        mockMvc.perform(get("/api/products/1"))
+        mockMvc.perform(get("/api/products/1")
+                        .with(httpBasic("apiuser", "apipassword")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.stockQuantity").value(3));
     }
@@ -71,6 +78,7 @@ class ProductOrderFlowTest {
                 """;
 
         mockMvc.perform(post("/api/products")
+                        .with(httpBasic("apiuser", "apipassword"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createProductJson))
                 .andExpect(status().isCreated());
@@ -84,9 +92,56 @@ class ProductOrderFlowTest {
                 """;
 
         mockMvc.perform(post("/api/orders")
+                        .with(httpBasic("apiuser", "apipassword"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createOrderJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.title").value("Insufficient stock"));
+    }
+
+    @Test
+    void shouldNotMutateStockWhenAnyProductIsMissing() throws Exception {
+        String createProductJson = """
+                {
+                  "name": "Keyboard",
+                  "description": "Mechanical keyboard",
+                  "price": 90.00,
+                  "stockQuantity": 5
+                }
+                """;
+
+        mockMvc.perform(post("/api/products")
+                        .with(httpBasic("apiuser", "apipassword"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createProductJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1));
+
+        String createOrderJson = """
+                {
+                  "items": [
+                    {"productId": 1, "quantity": 2},
+                    {"productId": 999, "quantity": 1}
+                  ]
+                }
+                """;
+
+        mockMvc.perform(post("/api/orders")
+                        .with(httpBasic("apiuser", "apipassword"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createOrderJson))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Resource not found"));
+
+        mockMvc.perform(get("/api/products/1")
+                        .with(httpBasic("apiuser", "apipassword")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stockQuantity").value(5));
+    }
+
+    @Test
+    void shouldRequireAuthenticationForApiEndpoints() throws Exception {
+        mockMvc.perform(get("/api/products"))
+                .andExpect(status().isUnauthorized());
     }
 }

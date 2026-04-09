@@ -13,7 +13,10 @@ import com.pollinate.model.Product;
 import com.pollinate.repository.OrderRepository;
 import com.pollinate.repository.ProductRepository;
 import com.pollinate.service.OrderService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -22,6 +25,8 @@ import java.util.List;
 
 @Service
 public class OrderServiceImpl implements OrderService {
+    private static final Logger log = LoggerFactory.getLogger(OrderServiceImpl.class);
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
 
@@ -31,7 +36,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
+        log.info("Creating order with {} item(s)", request.getItems().size());
+        List<RequestedProduct> requestedProducts = new ArrayList<>();
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
@@ -39,25 +47,40 @@ public class OrderServiceImpl implements OrderService {
             Product product = productRepository.findById(requestItem.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + requestItem.getProductId()));
 
-            if (product.getStockQuantity() < requestItem.getQuantity()) {
+            requestedProducts.add(new RequestedProduct(product, requestItem.getQuantity()));
+        }
+
+        for (RequestedProduct requested : requestedProducts) {
+            Product product = requested.product();
+            int quantity = requested.quantity();
+
+            if (product.getStockQuantity() < quantity) {
+                log.warn("Insufficient stock for product {}: requested={}, available={}",
+                        product.getId(), quantity, product.getStockQuantity());
                 throw new InsufficientStockException("Insufficient stock for product " + product.getId());
             }
 
-            BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(requestItem.getQuantity()));
+            BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(quantity));
             totalAmount = totalAmount.add(lineTotal);
 
             OrderItem orderItem = new OrderItem(
+                    null,
                     product.getId(),
                     product.getName(),
                     product.getPrice(),
-                    requestItem.getQuantity(),
+                    quantity,
                     lineTotal
             );
             orderItems.add(orderItem);
+        }
 
-            product.setStockQuantity(product.getStockQuantity() - requestItem.getQuantity());
+        for (RequestedProduct requested : requestedProducts) {
+            Product product = requested.product();
+            product.setStockQuantity(product.getStockQuantity() - requested.quantity());
             product.setUpdatedAt(Instant.now());
             productRepository.save(product);
+            log.debug("Deducted {} unit(s) from product {} (remaining: {})",
+                    requested.quantity(), product.getId(), product.getStockQuantity());
         }
 
         Order order = new Order();
@@ -66,7 +89,12 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);
         order.setCreatedAt(Instant.now());
 
-        return OrderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        log.info("Order {} created – {} item(s), total {}", saved.getId(), orderItems.size(), totalAmount);
+        return OrderMapper.toResponse(saved);
+    }
+
+    private record RequestedProduct(Product product, int quantity) {
     }
 
     @Override
