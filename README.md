@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Order Management Microservice (Spring Boot)
 
 Small Spring Boot microservice demonstrating clean backend design for managing **Products** and **Orders**.
@@ -111,3 +112,7 @@ Run tests:
 mvn test
 ```
 
+=======
+# Order-Management-Microservices
+Microservices that manages Product and Orders
+>>>>>>> origin/main
