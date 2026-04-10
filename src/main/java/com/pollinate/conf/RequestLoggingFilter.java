@@ -11,13 +11,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
-/**
- * Logs incoming HTTP requests with method, path, status, and elapsed time.
- * Skips verbose logging for framework/dev endpoints (Swagger UI, OpenAPI docs, H2 Console).
- */
+
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestLoggingFilter extends OncePerRequestFilter {
