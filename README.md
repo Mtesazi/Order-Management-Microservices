@@ -64,11 +64,12 @@ Relations:
 
 ## Security
 
-- All `/api/**` endpoints require HTTP Basic authentication.
+- HTTP Basic authentication is enabled.
+- All endpoints require authentication **except** `/h2-console/**`.
 - Credentials are configurable via:
   - `spring.security.user.name`
   - `spring.security.user.password`
-- Swagger is available for local exploration.
+- Swagger/OpenAPI endpoints are also protected by Basic auth.
 - H2 console is enabled in the default profile.
 
 Default local credentials:
@@ -78,7 +79,8 @@ Default local credentials:
 
 ## API Documentation
 
-- Swagger UI: `http://localhost:8083/swagger-ui.html`
+- Swagger UI: `http://localhost:8083/swagger-ui/index.html`
+- Alternate Swagger UI path: `http://localhost:8083/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8083/v3/api-docs`
 
 ## Run
@@ -87,11 +89,6 @@ Default local credentials:
 mvn spring-boot:run
 ```
 
-Run with the dev profile (optional):
-
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-```
 
 H2 Console:
 
