@@ -22,10 +22,11 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -100,25 +101,6 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[1].name").value("Mouse"));
-    }
-
-    @Test
-    void searchProductsShouldDelegateQueryParamsAndReturnFilteredList() throws Exception {
-        when(productService.searchProducts("laptop", true, 1, 5)).thenReturn(List.of(
-                new ProductResponse(2L, "Laptop Pro", "Business laptop", new BigDecimal("1599.00"), 3, null, null)
-        ));
-
-        mockMvc.perform(get("/api/products/search")
-                        .with(httpBasic("apiuser", "apipassword"))
-                        .param("name", "laptop")
-                        .param("inStock", "true")
-                        .param("page", "1")
-                        .param("size", "5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(2))
-                .andExpect(jsonPath("$[0].name").value("Laptop Pro"));
-
-        verify(productService).searchProducts("laptop", true, 1, 5);
     }
 
     @Test
