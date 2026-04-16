@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -51,6 +52,36 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll().stream()
                 .sorted(Comparator.comparing(Product::getId))
+                .map(ProductMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ProductResponse> searchProducts(String name, Boolean inStock, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = size > 0 ? size : 10;
+
+        String normalizedName = name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
+        boolean hasNameFilter = !normalizedName.isEmpty();
+
+        List<Product> filteredProducts = productRepository.findAll().stream()
+                .sorted(Comparator.comparing(Product::getId))
+                .filter(product -> !hasNameFilter
+                        || (product.getName() != null
+                        && product.getName().toLowerCase(Locale.ROOT).contains(normalizedName)))
+                .filter(product -> inStock == null
+                        || (inStock ? product.getStockQuantity() > 0 : product.getStockQuantity() == 0))
+                .toList();
+
+        long startLong = (long) normalizedPage * normalizedSize;
+        if (startLong >= filteredProducts.size()) {
+            return List.of();
+        }
+
+        int start = (int) startLong;
+        int end = Math.min(start + normalizedSize, filteredProducts.size());
+
+        return filteredProducts.subList(start, end).stream()
                 .map(ProductMapper::toResponse)
                 .toList();
     }

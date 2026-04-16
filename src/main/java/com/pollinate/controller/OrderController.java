@@ -13,13 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -65,5 +60,16 @@ public class OrderController {
             content = @Content(array = @ArraySchema(schema = @Schema(implementation = OrderResponse.class))))
     public List<OrderResponse> getAllOrders() {
         return orderService.getAllOrders();
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "List orders with pagination")
+    @ApiResponse(responseCode = "200", description = "Orders returned",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = OrderResponse.class))))
+    public List<OrderResponse> searchOrdersByIdAndProductName(@RequestParam(required = false) Long id,
+                                                              @RequestParam(required = false) String productName,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "10") int size) {
+        return orderService.searchOrdersByIdAndProductName(id, productName, page, size);
     }
 }

@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -108,6 +109,35 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderResponse> getAllOrders() {
         return orderRepository.findAll().stream()
                 .sorted(Comparator.comparing(Order::getId))
+                .map(OrderMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<OrderResponse> searchOrdersByIdAndProductName(Long id, String productName, int page, int size) {
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = size > 0 ? size : 10;
+
+        String normalizedProductName = productName == null ? "" : productName.trim().toLowerCase(Locale.ROOT);
+        boolean hasProductNameFilter = !normalizedProductName.isEmpty();
+
+        List<Order> filteredOrders = orderRepository.findAll().stream()
+                .sorted(Comparator.comparing(Order::getId))
+                .filter(order -> id == null || id.equals(order.getId()))
+                .filter(order -> !hasProductNameFilter || order.getItems().stream()
+                        .anyMatch(item -> item.getProductName() != null
+                                && item.getProductName().toLowerCase(Locale.ROOT).contains(normalizedProductName)))
+                .toList();
+
+        long startLong = (long) normalizedPage * normalizedSize;
+        if (startLong >= filteredOrders.size() || startLong > Integer.MAX_VALUE) {
+            return List.of();
+        }
+
+        int start = (int) startLong;
+        int end = Math.min(start + normalizedSize, filteredOrders.size());
+
+        return filteredOrders.subList(start, end).stream()
                 .map(OrderMapper::toResponse)
                 .toList();
     }

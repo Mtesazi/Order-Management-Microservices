@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 @RestController
@@ -80,5 +80,16 @@ public class ProductController {
     })
     public ProductResponse updateStock(@PathVariable Long id, @Valid @RequestBody UpdateProductStockRequest request) {
         return productService.updateStock(id, request.getStockQuantity());
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "Search products", description = "Search products by optional name, stock availability, and pagination")
+    @ApiResponse(responseCode = "200", description = "Products returned",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProductResponse.class))))
+    public List<ProductResponse> searchProductByInOrder(@RequestParam(required = false) String name,
+                                                        @RequestParam(required = false) Boolean inStock,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "10") int size) {
+        return productService.searchProducts(name, inStock, page, size);
     }
 }

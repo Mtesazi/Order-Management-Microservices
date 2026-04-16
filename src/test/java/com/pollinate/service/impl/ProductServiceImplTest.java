@@ -78,6 +78,53 @@ class ProductServiceImplTest {
     }
 
     @Test
+    void searchProductsShouldFilterByNameIgnoringCase() {
+        Product first = new Product(1L, "Laptop Pro", "Business", new BigDecimal("1200.00"), 5, Instant.now(), Instant.now());
+        Product second = new Product(2L, "Mouse", "Wireless", new BigDecimal("25.00"), 10, Instant.now(), Instant.now());
+
+        when(productRepository.findAll()).thenReturn(List.of(second, first));
+
+        List<ProductResponse> responses = productService.searchProducts(" laptop ", null, 0, 10);
+
+        assertEquals(1, responses.size());
+        assertEquals(1L, responses.getFirst().getId());
+    }
+
+    @Test
+    void searchProductsShouldFilterByStockAvailability() {
+        Product inStockProduct = new Product(1L, "Laptop", "Business", new BigDecimal("1200.00"), 5, Instant.now(), Instant.now());
+        Product outOfStockProduct = new Product(2L, "Mouse", "Wireless", new BigDecimal("25.00"), 0, Instant.now(), Instant.now());
+
+        when(productRepository.findAll()).thenReturn(List.of(inStockProduct, outOfStockProduct));
+
+        List<ProductResponse> inStockResponses = productService.searchProducts(null, true, 0, 10);
+        List<ProductResponse> outOfStockResponses = productService.searchProducts(null, false, 0, 10);
+
+        assertEquals(1, inStockResponses.size());
+        assertEquals(1L, inStockResponses.getFirst().getId());
+        assertEquals(1, outOfStockResponses.size());
+        assertEquals(2L, outOfStockResponses.getFirst().getId());
+    }
+
+    @Test
+    void searchProductsShouldApplyCombinedFiltersAndPagination() {
+        Product first = new Product(1L, "Laptop Air", "Portable", new BigDecimal("999.00"), 3, Instant.now(), Instant.now());
+        Product second = new Product(2L, "Laptop Pro", "Business", new BigDecimal("1599.00"), 2, Instant.now(), Instant.now());
+        Product third = new Product(3L, "Laptop Sleeve", "Accessory", new BigDecimal("29.00"), 0, Instant.now(), Instant.now());
+
+        when(productRepository.findAll()).thenReturn(List.of(third, second, first));
+
+        List<ProductResponse> pagedResponses = productService.searchProducts("laptop", true, 1, 1);
+        List<ProductResponse> normalizedResponses = productService.searchProducts("laptop", true, -1, 0);
+
+        assertEquals(1, pagedResponses.size());
+        assertEquals(2L, pagedResponses.getFirst().getId());
+        assertEquals(2, normalizedResponses.size());
+        assertEquals(1L, normalizedResponses.getFirst().getId());
+        assertEquals(2L, normalizedResponses.get(1).getId());
+    }
+
+    @Test
     void updateStockShouldPersistNewValue() {
         Product product = new Product(1L, "Laptop", "Business", new BigDecimal("1200.00"), 5, Instant.now(), Instant.now());
 
